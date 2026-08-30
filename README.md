@@ -36,9 +36,9 @@ type: custom:trio-e-card
 name: Bath
 compact: false
 presets:
-  - { name: Sander, temperature: 40, volume: 180 }
-  - { name: Quick,  temperature: 41, volume: 215 }
-  - { name: Kids,   temperature: 36, volume: 90 }
+  - { name: Shortcut 1, temperature: 38, volume: 150 }
+  - { name: Shortcut 2, temperature: 40, volume: 180 }
+  - { name: Shortcut 3, temperature: 42, volume: 200 }
 ```
 
 Entity ids are auto-defaulted to this integration's entities and can be

@@ -18,9 +18,9 @@ const DEFAULT_ENTITIES = {
 };
 
 const DEFAULT_PRESETS = [
-  { name: "Sander", temperature: 40, volume: 180 },
-  { name: "Quick", temperature: 41, volume: 215 },
-  { name: "Kids", temperature: 36, volume: 90 },
+  { name: "Shortcut 1", temperature: 38, volume: 150 },
+  { name: "Shortcut 2", temperature: 40, volume: 180 },
+  { name: "Shortcut 3", temperature: 42, volume: 200 },
 ];
 
 const HOLD_MS = 1000;
@@ -428,7 +428,7 @@ class TrioECardEditor extends HTMLElement {
       this._config.name = g("name").value || "Bath";
       this._config.compact = g("compact").checked;
       this._config.presets = [0, 1, 2].map((i) => ({
-        name: g(`pn${i}`).value || `Preset ${i + 1}`,
+        name: g(`pn${i}`).value || `Shortcut ${i + 1}`,
         temperature: parseFloat(g(`pt${i}`).value) || 38,
         volume: parseFloat(g(`pv${i}`).value) || 150,
       }));
