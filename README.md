@@ -1,0 +1,53 @@
+# Viega Trio E for Home Assistant
+
+Local-polling Home Assistant integration for the **Viega Multiplex Trio E**
+electronic bath filler (via its WLAN module, e.g. model 708870).
+
+No cloud, no account — talks HTTP directly to the module on your LAN.
+
+## Entities
+
+| Entity | What it does |
+|---|---|
+| `sensor.…_water_temperature` | Live mixed-water temperature |
+| `sensor.…_fill_progress` | Progress (%) of a volume-based fill |
+| `binary_sensor.…_running` | Water flowing / program active |
+| `number.…_target_temperature` | Target temperature for tap & fills |
+| `number.…_flow` | Tap flow (%) |
+| `switch.…_tap` | Open/close the tap at target temp+flow |
+| `valve.…_drain_popup` | Bathtub drain popup |
+| `button.…_quick_program` | Run the on-device quick program |
+| `button.…_stop` | Stop everything |
+
+## Service
+
+```yaml
+service: trio_e.fill_bath
+data:
+  temperature: 40   # °C
+  volume: 180       # litres — the Trio E stops itself
+```
+
+Perfect for a "Run my bath" script, voice command, or dashboard button.
+
+## Install
+
+1. HACS → Integrations → ⋮ → *Custom repositories* → add this repo (category: Integration)
+2. Install **Viega Trio E**, restart Home Assistant
+3. Settings → Devices & Services → *Add Integration* → **Viega Trio E** → enter the module's IP
+
+Give the WLAN module a static IP / DHCP reservation.
+
+## Notes
+
+- The module keeps no persistent temperature setpoint; HA holds the target and
+  sends it with each command (same approach as the device's own app).
+- Opening the tap first triggers the module's quick-program arm sequence —
+  a quirk inherited from [homebridge-trio-e](https://github.com/AxelTerizaki/homebridge-trio-e),
+  without which flow commands are ignored.
+- Polling is 10 s when idle, 2 s while water is running.
+
+## Credits
+
+API reverse-engineering based on
+[AxelTerizaki/homebridge-trio-e](https://github.com/AxelTerizaki/homebridge-trio-e) (MIT).

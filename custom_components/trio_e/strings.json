@@ -1,0 +1,61 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Viega Trio E",
+        "description": "Connect to the Trio E WLAN module on your network.",
+        "data": {
+          "host": "IP address"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach the Trio E at that address",
+      "invalid_device": "The device answered but does not look like a Trio E"
+    },
+    "abort": {
+      "already_configured": "This Trio E is already configured"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "water_temperature": {
+        "name": "Water temperature"
+      },
+      "fill_progress": {
+        "name": "Fill progress"
+      }
+    },
+    "binary_sensor": {
+      "running": {
+        "name": "Running"
+      }
+    },
+    "number": {
+      "target_temperature": {
+        "name": "Target temperature"
+      },
+      "flow": {
+        "name": "Flow"
+      }
+    },
+    "switch": {
+      "tap": {
+        "name": "Tap"
+      }
+    },
+    "valve": {
+      "popup": {
+        "name": "Drain popup"
+      }
+    },
+    "button": {
+      "quick_program": {
+        "name": "Quick program"
+      },
+      "stop": {
+        "name": "Stop"
+      }
+    }
+  }
+}
