@@ -27,12 +27,13 @@ const HOLD_MS = 1000;
 const SLIDER_DEBOUNCE_MS = 300;
 const SLIDER_QUIET_MS = 1500; // ignore external updates this long after user input
 
-/* Map water temperature (°C) to a tint: 20° cool blue -> 60° hot red. */
+/* Map water temperature (°C) to a tint: 20° cool blue -> 60° hot red.
+ * RGB blend (not a hue sweep) so the midpoint never turns green. */
 function waterColor(temp) {
   const t = Math.min(60, Math.max(20, Number(temp) || 38));
-  const frac = (t - 20) / 40; // 0..1
-  const hue = 205 - frac * 205; // 205 (blue) -> 0 (red)
-  return `hsl(${hue.toFixed(0)}, 75%, 48%)`;
+  const f = (t - 20) / 40; // 0..1
+  const mix = (a, b) => Math.round(a + (b - a) * f);
+  return `rgb(${mix(59, 224)}, ${mix(130, 75)}, ${mix(212, 58)})`;
 }
 
 class TrioECard extends HTMLElement {
