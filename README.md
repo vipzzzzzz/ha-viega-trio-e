@@ -19,6 +19,34 @@ No cloud, no account — talks HTTP directly to the module on your LAN.
 | `button.…_quick_program` | Run the on-device quick program |
 | `button.…_stop` | Stop everything |
 
+## Bundled custom card
+
+The integration ships `custom:trio-e-card` — a bathtub card with manual
+controls and three **hold-to-start** fill presets (press ~1 s; the ring fills;
+release early to cancel). While water runs, presets swap for a progress
+display and a big STOP. The bathtub graphic fills with animated,
+temperature-tinted water; `compact: true` gives a graphics-free variant.
+
+The card is served by the integration and auto-registered as a Lovelace
+resource on storage-mode setups (YAML mode: add
+`/trio_e_files/trio-e-card.js` as a `module` resource manually).
+
+```yaml
+type: custom:trio-e-card
+name: Bath
+compact: false
+presets:
+  - { name: Sander, temperature: 40, volume: 180 }
+  - { name: Quick,  temperature: 41, volume: 215 }
+  - { name: Kids,   temperature: 36, volume: 90 }
+```
+
+Entity ids are auto-defaulted to this integration's entities and can be
+overridden per key under `entities:`. A visual editor is included.
+
+Note: the drain-popup button shows the **last commanded** position — the
+device has no position sensor, so a hand-operated plug goes unseen.
+
 ## Service
 
 ```yaml

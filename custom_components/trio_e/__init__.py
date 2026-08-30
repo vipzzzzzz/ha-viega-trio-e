@@ -2,14 +2,23 @@
 
 from __future__ import annotations
 
+import logging
+from pathlib import Path
+
 import voluptuous as vol
 
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_HOST, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.loader import async_get_integration
+
+_LOGGER = logging.getLogger(__name__)
+
+CARD_URL = "/trio_e_files/trio-e-card.js"
 
 from .api import TrioEClient, TrioEError
 from .const import (
@@ -72,8 +81,59 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     return True
 
 
+async def _async_register_frontend(hass: HomeAssistant) -> None:
+    """Serve the bundled trio-e-card and register it as a Lovelace resource.
+
+    Storage-mode dashboards get the resource added/updated automatically
+    (version query param busts browser caches on updates). YAML-mode setups
+    must add the resource manually — documented in the README.
+    """
+    if hass.data.get(f"{DOMAIN}_frontend_registered"):
+        return
+    hass.data[f"{DOMAIN}_frontend_registered"] = True
+
+    card_path = Path(__file__).parent / "frontend" / "trio-e-card.js"
+    await hass.http.async_register_static_paths(
+        [StaticPathConfig(CARD_URL, str(card_path), True)]
+    )
+
+    integration = await async_get_integration(hass, DOMAIN)
+    versioned_url = f"{CARD_URL}?v={integration.version}"
+
+    lovelace = hass.data.get("lovelace")
+    resources = getattr(lovelace, "resources", None)
+    if resources is None and isinstance(lovelace, dict):  # pre-2024.4 layout
+        resources = lovelace.get("resources")
+    mode = getattr(lovelace, "mode", None) or (
+        lovelace.get("mode") if isinstance(lovelace, dict) else None
+    )
+    if resources is None or mode != "storage":
+        _LOGGER.info(
+            "Lovelace not in storage mode; add %s as a manual resource", versioned_url
+        )
+        return
+
+    try:
+        if not resources.loaded:
+            await resources.async_load()
+            resources.loaded = True
+        for item in resources.async_items():
+            if item.get("url", "").startswith(CARD_URL):
+                if item["url"] != versioned_url:
+                    await resources.async_update_item(
+                        item["id"], {"url": versioned_url}
+                    )
+                return
+        await resources.async_create_item(
+            {"res_type": "module", "url": versioned_url}
+        )
+    except Exception as err:  # noqa: BLE001 - never block device setup on frontend sugar
+        _LOGGER.warning("Could not auto-register the trio-e-card resource: %s", err)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: TrioEConfigEntry) -> bool:
     """Set up Trio E from a config entry."""
+    await _async_register_frontend(hass)
     client = TrioEClient(async_get_clientsession(hass), entry.data[CONF_HOST])
     coordinator = TrioECoordinator(hass, entry, client)
     await coordinator.async_config_entry_first_refresh()
