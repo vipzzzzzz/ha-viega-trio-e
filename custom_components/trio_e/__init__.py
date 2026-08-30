@@ -9,8 +9,8 @@ import voluptuous as vol
 
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import CONF_HOST, Platform
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.const import CONF_HOST, EVENT_HOMEASSISTANT_STARTED, Platform
+from homeassistant.core import CoreState, HomeAssistant, ServiceCall
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -100,35 +100,46 @@ async def _async_register_frontend(hass: HomeAssistant) -> None:
     integration = await async_get_integration(hass, DOMAIN)
     versioned_url = f"{CARD_URL}?v={integration.version}"
 
-    lovelace = hass.data.get("lovelace")
-    resources = getattr(lovelace, "resources", None)
-    if resources is None and isinstance(lovelace, dict):  # pre-2024.4 layout
-        resources = lovelace.get("resources")
-    mode = getattr(lovelace, "mode", None) or (
-        lovelace.get("mode") if isinstance(lovelace, dict) else None
-    )
-    if resources is None or mode != "storage":
-        _LOGGER.info(
-            "Lovelace not in storage mode; add %s as a manual resource", versioned_url
+    async def _register_resource(_event=None) -> None:
+        # Lovelace data is only reliably populated once HA has fully started;
+        # config entries often set up earlier, so this may be deferred below.
+        lovelace = hass.data.get("lovelace")
+        resources = getattr(lovelace, "resources", None)
+        if resources is None and isinstance(lovelace, dict):  # pre-2024.4 layout
+            resources = lovelace.get("resources")
+        mode = getattr(lovelace, "mode", None) or (
+            lovelace.get("mode") if isinstance(lovelace, dict) else None
         )
-        return
+        if resources is None or mode != "storage":
+            _LOGGER.warning(
+                "Lovelace not in storage mode; add %s as a manual resource",
+                versioned_url,
+            )
+            return
+        try:
+            if not getattr(resources, "loaded", True):
+                await resources.async_load()
+                resources.loaded = True
+            for item in resources.async_items():
+                if item.get("url", "").startswith(CARD_URL):
+                    if item["url"] != versioned_url:
+                        await resources.async_update_item(
+                            item["id"], {"url": versioned_url}
+                        )
+                    return
+            await resources.async_create_item(
+                {"res_type": "module", "url": versioned_url}
+            )
+            _LOGGER.debug("Registered Lovelace resource %s", versioned_url)
+        except Exception as err:  # noqa: BLE001 - never block setup on frontend sugar
+            _LOGGER.warning(
+                "Could not auto-register the trio-e-card resource: %s", err
+            )
 
-    try:
-        if not resources.loaded:
-            await resources.async_load()
-            resources.loaded = True
-        for item in resources.async_items():
-            if item.get("url", "").startswith(CARD_URL):
-                if item["url"] != versioned_url:
-                    await resources.async_update_item(
-                        item["id"], {"url": versioned_url}
-                    )
-                return
-        await resources.async_create_item(
-            {"res_type": "module", "url": versioned_url}
-        )
-    except Exception as err:  # noqa: BLE001 - never block device setup on frontend sugar
-        _LOGGER.warning("Could not auto-register the trio-e-card resource: %s", err)
+    if hass.state is CoreState.running:
+        await _register_resource()
+    else:
+        hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, _register_resource)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: TrioEConfigEntry) -> bool:

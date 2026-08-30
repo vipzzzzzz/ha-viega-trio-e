@@ -1,12 +1,14 @@
 {
   "domain": "trio_e",
   "name": "Viega Trio E",
-  "codeowners": ["@vipzzzzzz"],
+  "codeowners": [
+    "@vipzzzzzz"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/vipzzzzzz/ha-viega-trio-e",
   "integration_type": "device",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/vipzzzzzz/ha-viega-trio-e/issues",
   "requirements": [],
-  "version": "0.2.0"
+  "version": "0.2.1"
 }
